@@ -1,0 +1,38 @@
+# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+Vagrant.require_version ">= 1.6.0"
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+$num_instances = 3
+$instance_name_prefix = "zk"
+$vm_memory = 256
+$vm_cpus = 1
+$ip_start = "192.168.3"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # always use Vagrants insecure key
+  config.ssh.insert_key = false
+  config.vm.box = "ubuntu/precise64"
+
+  config.vm.provider :virtualbox do |v|
+    v.check_guest_additions = false
+    v.functional_vboxsf     = false
+  end
+
+
+  (1..$num_instances).each do |i|
+    config.vm.define vm_name = "%s-%02d" % [$instance_name_prefix, i] do |config|
+      config.vm.hostname = vm_name
+
+      config.vm.provider :virtualbox do |vb|
+        vb.memory = $vm_memory
+        vb.cpus = $vm_cpus
+      end
+
+      ip = "#{$ip_start}.#{i+100}"
+      config.vm.network :private_network, ip: ip
+    end
+  end
+end
