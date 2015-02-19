@@ -1,8 +1,0 @@
----
-
-- hosts: zookeeper
-  sudo: yes
-  vars:
-    zk_home: /etc/zookeeper
-  roles:
-    - role: zookeeper

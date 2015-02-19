@@ -1,0 +1,9 @@
+1. [DONE] switch to single ZK service with %i reference to instance number
+2. [DONE] introduce sidekick for handling such errors like node failure (TTL for ETCD entry)
+
+2.a make launches stable on variable number of nodes
+
+3. [IDEA] Provide some kind of DNS service or host renewal to automatically
+          deal with ZK restart
+
+4. README -> blog post

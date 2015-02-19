@@ -1,0 +1,115 @@
+# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+
+require 'fileutils'
+require 'yaml'
+
+Vagrant.require_version ">= 1.6.0"
+
+required_plugins = %w( vagrant-hostsupdater vagrant-host-shell vagrant-cachier )
+required_plugins.each do |plugin|
+  system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
+end
+
+DOCKER_BUILDS = File.join(File.dirname(__FILE__), "modules/containers")
+CLOUD_CONFIG_PATH = File.join(File.dirname(__FILE__), "user-data")
+CONFIG = File.join(File.dirname(__FILE__), "config.rb")
+
+# Defaults for config options defined in CONFIG
+$num_instances = 1
+$update_channel = "alpha"
+$enable_serial_logging = false
+$vb_gui = false
+$vb_memory = 2048
+$vb_cpus = 1
+
+# Attempt to apply the deprecated environment variable NUM_INSTANCES to
+# $num_instances while allowing config.rb to override it
+if ENV["NUM_INSTANCES"].to_i > 0 && ENV["NUM_INSTANCES"]
+  $num_instances = ENV["NUM_INSTANCES"].to_i
+end
+
+if File.exist?(CONFIG)
+  require CONFIG
+end
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "coreos-%s" % $update_channel
+  config.vm.box_version = ">= 444.5.0"
+  config.vm.box_url = "http://%s.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json" % $update_channel
+
+  config.vm.provider :vmware_fusion do |vb, override|
+    override.vm.box_url = "http://%s.release.core-os.net/amd64-usr/current/coreos_production_vagrant_vmware_fusion.json" % $update_channel
+  end
+
+  config.vm.provider :virtualbox do |v|
+    # On VirtualBox, we don't have guest additions or a functional vboxsf
+    # in CoreOS, so tell Vagrant that so it can be smarter.
+    v.check_guest_additions = false
+    v.functional_vboxsf     = false
+  end
+
+  # plugin conflict
+  if Vagrant.has_plugin?("vagrant-vbguest") then
+    config.vbguest.auto_update = false
+  end
+
+  #cache stuff
+  if Vagrant.has_plugin?("vagrant-cachier") then
+    # Configure cached packages to be shared between instances of the same base box.
+    config.cache.scope = :box
+
+    config.cache.synced_folder_opts = {
+        type: :nfs,
+        mount_options: ['rw', 'vers=3', 'tcp', 'nolock']
+    }
+  end
+
+
+  (1..$num_instances).each do |i|
+    config.vm.define vm_name = "mesos-%02d" % i do |config|
+      config.vm.hostname = vm_name
+
+      # Only run these configurations on first container
+      if i == 1
+        # Make sure our docker containers are up to date.
+        config.vm.provision :host_shell, :inline => "cd images && ./build.sh"
+      end
+
+      $forward_ports.each do |port|
+        config.vm.network "forwarded_port", guest: port, host: port, auto_correct: true
+      end
+
+      config.vm.provider :virtualbox do |vb|
+        vb.gui = $vb_gui
+        vb.memory = $vb_memory
+        vb.cpus = $vb_cpus
+      end
+
+      ip = "63.76.7.#{i+100}" #phone letters-digits placement: m=6, e=3, s=7, o=6, s=7
+      config.vm.network :private_network, ip: ip
+
+      # Uncomment below to enable NFS for sharing the host machine into the coreos-vagrant VM.
+      config.vm.synced_folder ".", "/home/core/share", id: "core", :nfs => true, :mount_options => ['nolock,vers=3,udp']
+
+      if File.exist?(CLOUD_CONFIG_PATH)
+        # Pretend we're on different stacks to be able to target services like in production.
+        data = YAML.load(IO.readlines('user-data')[1..-1].join)
+        data['coreos']['fleet']['metadata'] = $fleetmeta[i]
+        data['coreos']['etcd']['discovery'] = $token
+        File.open(".user-data-#{i}", 'w') { |file| file.write("#cloud-config\n\n#{YAML.dump(data)}") }
+
+        config.vm.provision :file, :source => ".user-data-#{i}", :destination => "/tmp/vagrantfile-user-data"
+        config.vm.provision :shell, :inline => "mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/", :privileged => true
+      end
+
+      # Import docker containers on each instance.
+      config.vm.provision :shell, :inline => "cd /home/core/share/images && ./provision.sh"
+
+      # Load our services only when the last insance is booted, distribution is managed by fleet.
+      if i == $num_instances
+        config.vm.provision :shell, :path => "services/provision.sh"
+      end
+    end
+  end
+end

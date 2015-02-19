@@ -4,7 +4,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 cd $DIR
 
-while getopts "fp" opt; do
+while getopts "f" opt; do
   case $opt in
     f)
       echo ":=> destroying vagrant boxes"

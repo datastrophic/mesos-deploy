@@ -1,0 +1,16 @@
+#cloud-config
+
+---
+coreos:
+  etcd:
+    addr: $public_ipv4:4001
+    peer-addr: $public_ipv4:7001
+    discovery: auto set by provisioning
+  fleet:
+    public-ip: $public_ipv4
+    metadata: set by provision script
+  units:
+  - name: etcd.service
+    command: start
+  - name: fleet.service
+    command: start

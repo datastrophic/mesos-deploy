@@ -1,0 +1,32 @@
+[Unit]
+Description=ZooKeeper service
+Requires=docker.service
+After=docker.service
+
+[Service]
+User=core
+Environment=IMAGE=datastrophic/zookeeper
+TimeoutStartSec=30min
+Restart=always
+RestartSec=30
+ExecStartPre=-/usr/bin/docker kill zookeeper
+ExecStartPre=-/usr/bin/docker rm zookeeper
+ExecStartPre=-/usr/bin/docker pull $IMAGE
+ExecStartPre=/bin/sh -c 'until [ $(etcdctl ls /services/zookeeper | wc -l) == 3 ]; do sleep 1; done;'
+ExecStart=/bin/sh -c '\
+    /usr/bin/docker run \
+        --name zookeeper \
+        --net="host" \
+        --privileged \
+        -e ZOO_ID=%i \
+        -e ENSEMBLE_IPS=$(etcdctl ls /services/zookeeper | cut -d/ -f4  | paste -s -d,) \
+        -p 2181:2181 \
+        -p 2888:2888 \
+        -p 3888:3888 \
+        $IMAGE \
+    '
+ExecStop=-/usr/bin/docker stop zookeeper
+
+[X-Fleet]
+#MachineMetadata=zookeeper=true
+Conflicts=zookeeper@*.service

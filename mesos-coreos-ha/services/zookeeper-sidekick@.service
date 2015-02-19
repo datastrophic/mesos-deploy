@@ -1,0 +1,16 @@
+[Unit]
+Description=ZooKeeper Sidekick Service
+BindsTo=zookeeper@%i.service
+Before=zookeeper@%i.service
+
+[Service]
+Restart=always
+ExecStart=/bin/bash -c "\
+  while true; do \
+    etcdctl set /services/zookeeper/\"server.%i:`hostname -i | cut -d' ' -f1`:2888:3888\" %i --ttl 45; \
+    sleep 30; \
+  done"
+ExecStop=-/usr/bin/etcdctl rm /services/zookeeper/\"server.%i:`hostname -i | cut -d' ' -f1`:2888:3888\"
+
+[X-Fleet]
+MachineOf=zookeeper@%i.service

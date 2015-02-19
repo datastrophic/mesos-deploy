@@ -1,15 +1,16 @@
 [Unit]
 Description=MesosSlave
-After=docker.service
 Requires=docker.service
 
 [Service]
-Restart=on-failure
-RestartSec=20
+Environment=IMAGE=mesosphere/mesos-slave:0.21.1-1.1.ubuntu1404
+Restart=always
+RestartSec=5
 TimeoutStartSec=0
 ExecStartPre=-/usr/bin/docker kill mesos_slave
 ExecStartPre=-/usr/bin/docker rm mesos_slave
-ExecStartPre=/usr/bin/docker pull mesosphere/mesos-slave:0.21.1-1.1.ubuntu1404
+ExecStartPre=/usr/bin/docker pull $IMAGE
+ExecStartPre=/bin/sh -c 'until [ $(etcdctl ls /services/zookeeper | wc -l) == 3 ]; do sleep 2; done;'
 ExecStart=/usr/bin/sh -c "/usr/bin/docker run \
     --name=mesos_slave \
     --net=host \
@@ -18,12 +19,13 @@ ExecStart=/usr/bin/sh -c "/usr/bin/docker run \
     -v /usr/bin/docker:/usr/bin/docker:ro \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v /lib64/libdevmapper.so.1.02:/lib/libdevmapper.so.1.02:ro \
-    mesosphere/mesos-slave:0.21.1-1.1.ubuntu1404 \
-    --ip=$(/usr/bin/ip -o -4 addr list eth1 | grep global | awk \'{print $4}\' | cut -d/ -f1) \
+    $IMAGE \
+    --ip=$(hostname -i | cut -d' ' -f1) \
     --containerizers=docker \
-    --master=zk://192.168.3.101:2181,192.168.3.102:2181,192.168.3.103:2181/mesos \
+    --master=zk://$(etcdctl ls /services/zookeeper | cut -d: -f2 | sed 's/$/:2181/' | paste -s -d,)/mesos \
     --work_dir=/var/lib/mesos/slave \
     --log_dir=/var/log/mesos/slave"
+
 ExecStop=/usr/bin/docker stop mesos_slave
 
 [Install]

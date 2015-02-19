@@ -1,0 +1,32 @@
+[Unit]
+Description=Marathon
+Requires=docker.service
+
+[Service]
+Environment=IMAGE=mesosphere/marathon:v0.7.5
+Restart=always
+RestartSec=5
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill marathon
+ExecStartPre=-/usr/bin/docker rm marathon
+ExecStartPre=/usr/bin/docker pull $IMAGE
+ExecStartPre=/bin/sh -c 'until [ $(etcdctl ls /services/zookeeper | wc -l) == 3 ]; do sleep 2; done;'
+ExecStart=/usr/bin/sh -c "/usr/bin/docker run \
+    --name marathon \
+    -e LIBPROCESS_PORT=9090 \
+    -p 8080:8080 \
+    -p 9090:9090 \
+    -v /lib64/libdevmapper.so.1.02:/lib/libdevmapper.so.1.02:ro \
+    $IMAGE \
+    --master zk://$(etcdctl ls /services/zookeeper | cut -d: -f2 | sed 's/$/:2181/' | paste -s -d,)/mesos \
+    --zk zk://$(etcdctl ls /services/zookeeper | cut -d: -f2 | sed 's/$/:2181/' | paste -s -d,)/marathon \
+    --checkpoint \
+    --task_launch_timeout 300000"
+
+ExecStop=/usr/bin/docker stop marathon
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+#MachineOf=mesos-master@*.service
