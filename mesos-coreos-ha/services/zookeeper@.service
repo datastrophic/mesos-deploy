@@ -28,5 +28,5 @@ ExecStart=/bin/sh -c '\
 ExecStop=-/usr/bin/docker stop zookeeper
 
 [X-Fleet]
-#MachineMetadata=zookeeper=true
 Conflicts=zookeeper@*.service
+MachineMetadata=zookeeper=true

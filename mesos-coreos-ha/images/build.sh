@@ -2,6 +2,13 @@
 
 cd $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+function error() {
+ echo There are some problems with your Docker, check that service is running
+ exit 1;
+}
+
+docker info &> /dev/null || error
+
 # List of Docker images being archived
 # for faster distribution across VMs
 CONTAINERS=(

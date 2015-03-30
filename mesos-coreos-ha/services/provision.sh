@@ -1,9 +1,5 @@
 #!/bin/bash -e
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-
-cd $DIR
-
 ZK_INSTANCE_NUM=3
 MESOS_MASTER_NUM=3
 

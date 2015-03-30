@@ -6,8 +6,11 @@ coreos:
     addr: $public_ipv4:4001
     peer-addr: $public_ipv4:7001
     discovery: auto set by provisioning
+    peer-heartbeat-interval: 1000
+    peer-election-timeout: 4000
   fleet:
     public-ip: $public_ipv4
+    etcd-request-timeout: 15
     metadata: set by provision script
   units:
   - name: etcd.service

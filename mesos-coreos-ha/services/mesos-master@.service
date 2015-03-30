@@ -28,4 +28,5 @@ ExecStop=/usr/bin/docker stop mesos_master
 WantedBy=multi-user.target
 
 [X-Fleet]
-#MachineMetadata=mesos-master=true
+Conflicts=mesos-master@*.service
+MachineMetadata=mesos-master=true
