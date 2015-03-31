@@ -1,0 +1,9 @@
+- name: Setting Locale to UTF-8
+  shell: locale-gen en_US.UTF-8
+
+- name: adding mesosphere repository key
+  apt_key: id=E56151BF keyserver=keyserver.ubuntu.com state=present
+
+- name: add mesosphere repository
+  apt_repository: repo='deb http://repos.mesosphere.io/ubuntu trusty main' state=present
+

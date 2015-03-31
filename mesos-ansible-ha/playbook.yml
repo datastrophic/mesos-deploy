@@ -1,0 +1,24 @@
+---
+
+- hosts: all
+  sudo: True
+  roles:
+    - role: common
+    - role: oracle-java
+
+- hosts: zookeeper
+  sudo: True
+  roles:
+    - role: zookeeper
+
+- hosts: mesos
+  sudo: True
+  vars:
+    - quorum: 2
+  roles:
+    - role: mesos
+
+- hosts: marathon
+  sudo: True
+  roles:
+    - role: marathon

@@ -1,0 +1,20 @@
+- name: checking Java installion
+  shell: dpkg -l | grep -cim1 oracle-java8-installer
+  register: javaInstalled
+  ignore_errors: True
+
+- name: adding Java repository to sources
+  action: apt_repository repo='ppa:webupd8team/java'
+  when: javaInstalled.stdout == '0'
+
+- name: autoaccepting license for Java
+  action: shell echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+  when: javaInstalled.stdout == '0'
+
+- name: installing Java 8
+  apt: pkg=oracle-java8-installer state=present install_recommends=yes update_cache=yes
+  when: javaInstalled.stdout == '0'
+
+- name: set Java 8 environment
+  apt: pkg=oracle-java8-set-default state=present install_recommends=yes
+  when: javaInstalled.stdout == '0'

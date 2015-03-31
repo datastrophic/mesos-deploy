@@ -1,0 +1,22 @@
+---
+- name: Installation of Zookeeper Binaries
+  apt: name={{ item  }} state=present update_cache=yes
+  with_items:
+    - zookeeper
+    - zookeeper-bin
+    - zookeeperd
+
+- name: Delete zookeeper configuration
+  file: path={{ item }} state=absent
+  with_items:
+    - /etc/zookeeper/conf/zoo.cfg
+    - /etc/zookeeper/conf/myid
+
+- name: ZooKeeper ID configuration
+  template: src=zoo_id.j2 dest=/etc/zookeeper/conf/myid
+
+- name: ZooKeeper Config file
+  template: src=zoo.cfg.j2 dest=/etc/zookeeper/conf/zoo.cfg
+
+- name: restarting zookeeper
+  action: shell service zookeeper restart

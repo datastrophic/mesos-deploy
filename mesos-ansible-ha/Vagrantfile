@@ -1,0 +1,68 @@
+# -*- mode: ruby -*-
+# # vi: set ft=ruby :
+
+require 'fileutils'
+require 'yaml'
+
+Vagrant.require_version ">= 1.6.0"
+
+required_plugins = %w( vagrant-hostsupdater vagrant-host-shell vagrant-cachier )
+required_plugins.each do |plugin|
+  system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
+end
+
+# Defaults for config options defined in CONFIG
+$num_instances = 3
+$vb_gui = false
+$vb_memory = 2048
+$vb_cpus = 1
+
+# Attempt to apply the deprecated environment variable NUM_INSTANCES to
+# $num_instances while allowing config.rb to override it
+if ENV["NUM_INSTANCES"].to_i > 0 && ENV["NUM_INSTANCES"]
+  $num_instances = ENV["NUM_INSTANCES"].to_i
+end
+
+$key = File.read("#{Dir.home}/.ssh/id_rsa.pub")
+$shell = <<SCRIPT
+if [[ $(id -u ansible 2>/dev/null) -eq 0 ]]; then
+  useradd -m ansible -s /bin/bash
+  mkdir -p /home/ansible/.ssh
+  echo "#{$key}" >> /home/ansible/.ssh/authorized_keys
+  chown -R ansible /home/ansible
+  echo 'ansible  ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+fi
+SCRIPT
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/trusty64"
+
+  config.ssh.insert_key = false
+  config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+
+  # plugin conflict
+  if Vagrant.has_plugin?("vagrant-vbguest") then
+    config.vbguest.auto_update = false
+  end
+
+  (1..$num_instances).each do |i|
+    config.vm.define vm_name = "mesos-%02d" % i do |config|
+      config.vm.hostname = vm_name
+
+      config.vm.provider :virtualbox do |vb|
+        vb.gui = $vb_gui
+        vb.memory = $vb_memory
+        vb.cpus = $vb_cpus
+      end
+
+      ip = "63.76.7.#{i+100}" #naming: phone letters-digits placement: m=6, e=3, s=7, o=6, s=7
+      config.vm.network :private_network, ip: ip
+
+      config.vm.provision :shell, :inline => $shell
+
+      if i == $num_instances
+        config.vm.provision :host_shell, :inline => './provision.sh'
+      end
+    end
+  end
+end
