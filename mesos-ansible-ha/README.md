@@ -5,6 +5,18 @@ To launch 3-node Mesos Cluster with Marathon just run `vagrant up` from current 
 available on all three nodes and have web interface running at [`http://63.76.7.101:5050/`](http://63.76.7.101:5050/) (you will be redirected to
 current leader automatically).
 
+#### Non-Vagrant deployment
+
+For deployment to standalone cluster:
+
+  * modify `hosts` file according to cluster-specific nodes addresses and roles
+  * Mesos nodes registration in zookeeper is performed with ip addresses, so in different network setups different 
+    interfaces can be used. This behavior is controlled with `eth` variable in `group_vars/main.yml` file. Usually `eth0` 
+    works in most cases, but Vagrant needs `eth1` for this purpose, so variable's value is overwritten in `provision.sh` script.
+    In order to use different interface, override `--extra-vars "eth=eth1"` argument, or remove it in case you want to use
+    default one
+  * run `provision.sh`
+
 ####Web UI addresses and ports
 
 By default next nodes are used for Mesos Masters:
