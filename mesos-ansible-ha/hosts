@@ -7,6 +7,7 @@
 63.76.7.101 mesos_install_mode=mixed
 63.76.7.102 mesos_install_mode=mixed
 63.76.7.103 mesos_install_mode=mixed
+#63.76.7.104 mesos_install_mode=slave
 
 [marathon]
-63.76.7.101
+#63.76.7.101

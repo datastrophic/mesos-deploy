@@ -15,6 +15,7 @@
   sudo: True
   vars:
     - quorum: 2
+    - clusterName: 'Summingbird'
   roles:
     - role: mesos
 

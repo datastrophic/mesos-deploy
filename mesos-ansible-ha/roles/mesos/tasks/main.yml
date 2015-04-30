@@ -4,6 +4,9 @@
 - name: setting ZK ensemble address
   template: src=zk.j2 dest=/etc/mesos/zk
 
+- name: setting cluster name
+  shell: echo {{ clusterName }} > /etc/mesos-master/cluster
+
 - name: setting qourum
   shell: echo {{ quorum }} > /etc/mesos-master/quorum
 
