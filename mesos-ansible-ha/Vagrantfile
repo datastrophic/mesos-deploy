@@ -14,8 +14,8 @@ end
 # Defaults for config options defined in CONFIG
 $num_instances = 3
 $vb_gui = false
-$vb_memory = 4200
-$vb_cpus = 2
+$vb_memory = 3000
+$vb_cpus = 6
 
 # Attempt to apply the deprecated environment variable NUM_INSTANCES to
 # $num_instances while allowing config.rb to override it

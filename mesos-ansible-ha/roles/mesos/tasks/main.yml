@@ -1,6 +1,12 @@
 - name: installing mesos package
   apt: name=mesos state=present update_cache=yes
 
+- name: stopping running services
+  service: name={{ item }} state=stopped
+  with_items:
+    - mesos-master
+    - mesos-slave
+
 - name: setting ZK ensemble address
   template: src=zk.j2 dest=/etc/mesos/zk
 
@@ -16,26 +22,27 @@
 - name: setting ip addresses
   shell: /tmp/register-ip.sh
 
-- name: restarting ensebmle
-  service: name={{ item }} state=restarted
+- name: starting master nodes
+  service: name={{ item }} state=started
+  when: mesos_install_mode == 'mixed'
   with_items:
     - mesos-master
     - mesos-slave
 
-#Disabling slaves for Master-only nodes
-- name: shutting down slaves
-  service: name=mesos-slave state=stopped
+#Starting Masters-only
+- name: starting master nodes
+  service: name=mesos-master state=started
   when: mesos_install_mode == 'master'
 
 - name: overriding slaves start up configuration
   shell: echo manual > /etc/init/mesos-slave.override
   when: mesos_install_mode == 'master'
 
-#Disabling masters for Slave-only nodes
-- name: shutting down slaves
-  service: name=mesos-master state=stopped
+#Starting Slave-only nodes
+- name: starting slave nodes
+  service: name=mesos-slave state=started
   when: mesos_install_mode == 'slave'
 
-- name: overriding slaves start up configuration
+- name: overriding master start up configuration
   shell: echo manual > /etc/init/mesos-master.override
   when: mesos_install_mode == 'slave'
