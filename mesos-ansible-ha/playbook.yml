@@ -3,8 +3,8 @@
 - hosts: all
   sudo: True
   roles:
-    - role: common
-    - role: oracle-java
+     - role: common
+     - role: oracle-java
 
 - hosts: zookeeper
   sudo: True

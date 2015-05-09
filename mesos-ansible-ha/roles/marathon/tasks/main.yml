@@ -1,11 +1,5 @@
 - name: installing marathon package
   apt: name=marathon state=present update_cache=yes
 
-- name: copying ip address templates
-  template: src=register-ip.sh.j2 dest=/tmp/register-ip.sh mode=755
-
-- name: setting ip addresses
-  shell: /tmp/register-ip.sh
-
 - name: starting Marathon
   service: name=marathon state=restarted

@@ -3,19 +3,14 @@
 
 require 'fileutils'
 require 'yaml'
+require 'log4r'
 
 Vagrant.require_version ">= 1.6.0"
 
-required_plugins = %w( vagrant-hostsupdater vagrant-host-shell vagrant-cachier vagrant-hostmanager)
+required_plugins = %w( vagrant-host-shell vagrant-cachier vagrant-hostmanager)
 required_plugins.each do |plugin|
   system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
 end
-
-# Defaults for config options defined in CONFIG
-$num_instances = 3
-$vb_gui = false
-$vb_memory = 3000
-$vb_cpus = 6
 
 # Attempt to apply the deprecated environment variable NUM_INSTANCES to
 # $num_instances while allowing config.rb to override it
@@ -23,6 +18,7 @@ if ENV["NUM_INSTANCES"].to_i > 0 && ENV["NUM_INSTANCES"]
   $num_instances = ENV["NUM_INSTANCES"].to_i
 end
 
+# Registering ansible user with current user public key
 $key = File.read("#{Dir.home}/.ssh/id_rsa.pub")
 $shell = <<SCRIPT
 if [[ $(id -u ansible 2>/dev/null) -eq 0 ]]; then
@@ -34,9 +30,31 @@ if [[ $(id -u ansible 2>/dev/null) -eq 0 ]]; then
 fi
 SCRIPT
 
+# overriding private ip entry in vagrant machines
 $erasure = <<SCRIPT
-sudo sed -i -e "s/127.0.1.1.*/127.0.0.1 localhost/" /etc/hosts
+sudo sed -i "/127.0.1.1/d" /etc/hosts
 SCRIPT
+
+# workaround for hostmanager public ip resolution (eth1 in this case)
+$logger = Log4r::Logger.new('vagrantfile')
+def read_ip_address(machine)
+  result  = ""
+  begin
+    machine.communicate.execute("ifconfig eth1") do |type, data|
+      result << data if type == :stdout
+    end
+    $logger.info "Processing #{ machine.name } ... success"
+  rescue
+    $logger.info "Processing #{ machine.name } ... not running"
+  end
+  (ip = /inet addr:(\d+\.\d+\.\d+\.\d+)/.match(result)) && ip[1]
+end
+
+# Config options
+$num_instances = 3
+$vb_gui = false
+$vb_memory = 3000
+$vb_cpus = 6
 
 Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/trusty64"
@@ -56,7 +74,10 @@ Vagrant.configure("2") do |config|
 
   (1..$num_instances).each do |i|
     config.vm.define vm_name = "mesos-%02d" % i do |config|
-      config.vm.hostname = vm_name
+      config.vm.hostname = "#{vm_name}.local"
+      # FQDN is set manually because of some Vagrant/Ubuntu bug
+      config.vm.provision :shell, :inline => "hostname #{vm_name}.local"
+
 
       config.vm.provider :virtualbox do |vb|
         vb.gui = $vb_gui
@@ -64,11 +85,11 @@ Vagrant.configure("2") do |config|
         vb.cpus = $vb_cpus
       end
 
-      ip = "63.76.7.#{i+100}" #naming: phone letters-digits placement: m=6, e=3, s=7, o=6, s=7
+      ip = "192.168.2.#{i+100}"
       config.vm.network :private_network, ip: ip
 
-      config.vm.provision :shell, :inline => $erasure
       config.vm.provision :shell, :inline => $shell
+      config.vm.provision :shell, :inline => $erasure
 
       if i == $num_instances
         config.vm.provision :host_shell, :inline => './provision.sh'

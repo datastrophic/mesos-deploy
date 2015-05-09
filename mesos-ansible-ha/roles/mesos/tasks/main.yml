@@ -16,12 +16,6 @@
 - name: setting qourum
   shell: echo {{ quorum }} > /etc/mesos-master/quorum
 
-- name: copying ip address templates
-  template: src=register-ip.sh.j2 dest=/tmp/register-ip.sh mode=755
-
-- name: setting ip addresses
-  shell: /tmp/register-ip.sh
-
 - name: starting master nodes
   service: name={{ item }} state=started
   when: mesos_install_mode == 'mixed'

@@ -2,30 +2,29 @@
 
 ### Running
 To launch 3-node Mesos Cluster with Marathon just run `vagrant up` from current directory. Mesos Masters must be 
-available on all three nodes and have web interface running at [`http://63.76.7.101:5050/`](http://63.76.7.101:5050/) (you will be redirected to
+available on all three nodes and have web interface running at [`http://mesos-01.local:5050/`](http://mesos-01.local:5050/) (you will be redirected to
 current leader automatically).
+
+Host names automatically added to `/etc/hosts` by Vagrant `host-manager` plugin
 
 #### Non-Vagrant deployment
 
 For deployment to standalone cluster:
 
+  * verify that cluster nodes hostnames resolve to proper ip addresses. 
+  This is needed for proper Mesos nodes registration and ip advertizing in ZooKeeper
   * modify `hosts` file according to cluster-specific nodes addresses and roles
-  * Mesos nodes registration in zookeeper is performed with ip addresses, so in different network setups different 
-    interfaces can be used. This behavior is controlled with `eth` variable in `group_vars/main.yml` file. Usually `eth0` 
-    works in most cases, but Vagrant needs `eth1` for this purpose, so variable's value is overwritten in `provision.sh` script.
-    In order to use different interface, override `--extra-vars "eth=eth1"` argument, or remove it in case you want to use
-    default one
   * run `provision.sh`
 
 ####Web UI addresses and ports
 
 By default next nodes are used for Mesos Masters:
 
- * [`63.76.7.101:5050`](http://63.76.7.101:5050/)
- * [`63.76.7.102:5050`](http://63.76.7.102:5050/)
- * [`63.76.7.103:5050`](http://63.76.7.103:5050/)
+ * [`mesos-01.local:5050`](http://mesos-01.local:5050/)
+ * [`mesos-02.local:5050`](http://mesos-02.local:5050/)
+ * [`mesos-03.local:5050`](http://mesos-03.local:5050/)
 
-Marathon is launched at [`63.76.7.101:8080`](http://63.76.7.101:8080/)
+Marathon is launched at [`mesos-01.local:8080`](http://mesos-01.local:8080/)
 
 Mesos Slaves are launched globally at every machine in cluster
 
@@ -37,7 +36,7 @@ This provisioning is Ansible-centric and Vagrant boxes are tweaked in the next w
  to your real hardware cluster
  * Ansible playbook is executed after all hosts are booted up with Vagrant's `host-shell` plugin. `provision.sh` 
  contains ansible-playbook command with corresponding parameters. Inventory file used is `hosts` and in case you change 
-   amount of nodes or ip addresses this file must be changed as well.
+   amount of nodes this file must be changed as well.
    
    
 ### Ansible roles

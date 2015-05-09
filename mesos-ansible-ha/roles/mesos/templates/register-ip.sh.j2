@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# setting ip of specified by eth parameter interface to set IP for Mesos
-
-ifconfig {{ eth }} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' > /etc/mesos-master/ip
-ifconfig {{ eth }} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' > /etc/mesos-slave/ip
-
-ifconfig {{ eth }} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' > /etc/mesos-master/hostname
-ifconfig {{ eth }} | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }' > /etc/mesos-slave/hostname
