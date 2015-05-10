@@ -7,7 +7,7 @@ require 'log4r'
 
 Vagrant.require_version ">= 1.6.0"
 
-required_plugins = %w( vagrant-host-shell vagrant-cachier vagrant-hostmanager)
+required_plugins = %w( vagrant-hostmanager vagrant-cachier )
 required_plugins.each do |plugin|
   system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
 end
@@ -18,24 +18,18 @@ if ENV["NUM_INSTANCES"].to_i > 0 && ENV["NUM_INSTANCES"]
   $num_instances = ENV["NUM_INSTANCES"].to_i
 end
 
-# Registering ansible user with current user public key
-$key = File.read("#{Dir.home}/.ssh/id_rsa.pub")
+$key = File.read("id_rsa.pub")
 $shell = <<SCRIPT
-if [[ $(id -u ansible 2>/dev/null) -eq 0 ]]; then
-  useradd -m ansible -s /bin/bash
-  mkdir -p /home/ansible/.ssh
-  echo "#{$key}" >> /home/ansible/.ssh/authorized_keys
-  chown -R ansible /home/ansible
-  echo 'ansible  ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+if [[ $(id -u akirillov 2>/dev/null) -eq 0 ]]; then
+  useradd -m akirillov -s /bin/bash
+  mkdir -p /home/akirillov/.ssh
+  echo "#{$key}" >> /home/akirillov/.ssh/authorized_keys
+  chown -R akirillov /home/akirillov
+  echo 'akirillov  ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 fi
 SCRIPT
 
-# overriding private ip entry in vagrant machines
-$erasure = <<SCRIPT
-sudo sed -i "/127.0.1.1/d" /etc/hosts
-SCRIPT
-
-# workaround for hostmanager public ip resolution (eth1 in this case)
+# workaround for hostmanager public ip resolution
 $logger = Log4r::Logger.new('vagrantfile')
 def read_ip_address(machine)
   result  = ""
@@ -51,33 +45,32 @@ def read_ip_address(machine)
 end
 
 # Config options
-$num_instances = 3
+$num_instances = 6
 $vb_gui = false
-$vb_memory = 3000
+$vb_memory = 3700
 $vb_cpus = 6
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "ubuntu14/mesos22"
 
   config.ssh.insert_key = false
   config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
 
-  # plugin conflict
-  if Vagrant.has_plugin?("vagrant-vbguest") then
-    config.vbguest.auto_update = false
-  end
-
+  # setting /etc/hosts
   config.hostmanager.enabled = true
   config.hostmanager.manage_host = true
   config.hostmanager.ignore_private_ip = false
   config.hostmanager.include_offline = true
+  config.hostmanager.ip_resolver = proc do |machine|
+    read_ip_address(machine)
+  end
 
   (1..$num_instances).each do |i|
     config.vm.define vm_name = "mesos-%02d" % i do |config|
       config.vm.hostname = "#{vm_name}.hardy.local"
-      # FQDN is set manually because of some Vagrant/Ubuntu bug
-      config.vm.provision :shell, :inline => "hostname #{vm_name}.hardy.local"
 
+      # FQDN is set manually because of some Vagrant/Ubuntu bug 
+      config.vm.provision :shell, :inline => "hostname #{vm_name}.hardy.local"
 
       config.vm.provider :virtualbox do |vb|
         vb.gui = $vb_gui
@@ -85,15 +78,10 @@ Vagrant.configure("2") do |config|
         vb.cpus = $vb_cpus
       end
 
-      ip = "192.168.10.#{i+100}"
-      config.vm.network :private_network, ip: ip
+      ip = "192.168.2.#{i+100}"
+      config.vm.network :public_network, ip: ip, bridge: "eth0"
 
       config.vm.provision :shell, :inline => $shell
-      config.vm.provision :shell, :inline => $erasure
-
-      if i == $num_instances
-        config.vm.provision :host_shell, :inline => './provision.sh'
-      end
     end
   end
 end
