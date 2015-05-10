@@ -1,12 +1,15 @@
 [zookeeper]
-mesos-01.local zoo_id=1
-mesos-02.local zoo_id=2
-mesos-03.local zoo_id=3
+mesos-01.hardy.local zoo_id=1
+mesos-02.hardy.local zoo_id=2
+mesos-03.hardy.local zoo_id=3
 
 [mesos]
-mesos-01.local mesos_install_mode=mixed
-mesos-02.local mesos_install_mode=mixed
-mesos-03.local mesos_install_mode=mixed
+mesos-01.hardy.local mesos_install_mode=mixed
+mesos-02.hardy.local mesos_install_mode=mixed
+mesos-03.hardy.local mesos_install_mode=mixed
+mesos-04.hardy.local mesos_install_mode=slave
+mesos-05.hardy.local mesos_install_mode=slave
+mesos-06.hardy.local mesos_install_mode=slave
 
 [marathon]
-mesos-01.local
+mesos-01.hardy.local
