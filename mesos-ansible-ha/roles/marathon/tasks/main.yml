@@ -2,13 +2,13 @@
   apt: name=marathon state=present update_cache=yes
 
 - name: creating config dir
-  file: name={{ marathon_confdir }} state=directory
+  file: name={{ confdir }} state=directory
 
 - name: configuring Mesos master address
-  template: src=master.j2 dest={{ marathon_confdir }}/master
+  template: src=master.j2 dest={{ confdir }}/master
 
 - name: configuring ZK address
-  template: src=zk.j2 dest={{ marathon_confdir }}/zk
+  template: src=zk.j2 dest={{ confdir }}/zk
 
 - name: starting Marathon
   service: name=marathon state=restarted

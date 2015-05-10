@@ -3,8 +3,8 @@
 - hosts: all
   sudo: True
   roles:
-     - role: common
-     - role: oracle-java
+#     - role: common
+#     - role: oracle-java
 
 - hosts: zookeeper
   sudo: True
@@ -12,6 +12,7 @@
     - role: zookeeper
 
 - hosts: mesos
+#  gather_facts: yes
   sudo: True
   vars:
     - quorum: 2
@@ -21,5 +22,7 @@
 
 - hosts: marathon
   sudo: True
+  vars:
+    - confdir: /etc/marathon/conf
   roles:
     - role: marathon

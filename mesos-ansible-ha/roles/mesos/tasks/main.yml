@@ -16,7 +16,23 @@
 - name: setting qourum
   shell: echo {{ quorum }} > /etc/mesos-master/quorum
 
-- name: starting master nodes
+- name: remove temporary mesos data
+  file: name=/tmp/mesos state=absent
+
+# needed for public network in Vagrant
+#- shell: echo {{ hostvars[inventory_hostname]['ansible_eth1']['ipv4']['address'] }} > {{ item }}/ip
+#  with_items:
+#    - /etc/mesos-master
+#    - /etc/mesos-slave
+
+# we'll control starting of services manually
+- name: overriding master start up configuration
+  shell: echo manual > /etc/init/{{ item }}.override
+  with_items:
+    - mesos-master
+    - mesos-slave
+
+- name: starting all nodes in mixed mode (both master and slave)
   service: name={{ item }} state=started
   when: mesos_install_mode == 'mixed'
   with_items:
@@ -24,7 +40,7 @@
     - mesos-slave
 
 #Starting Masters-only
-- name: starting master nodes
+- name: starting master-only nodes
   service: name=mesos-master state=started
   when: mesos_install_mode == 'master'
 
@@ -33,7 +49,7 @@
   when: mesos_install_mode == 'master'
 
 #Starting Slave-only nodes
-- name: starting slave nodes
+- name: starting slave-only nodes
   service: name=mesos-slave state=started
   when: mesos_install_mode == 'slave'
 
