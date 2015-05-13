@@ -7,7 +7,7 @@ require 'log4r'
 
 Vagrant.require_version ">= 1.6.0"
 
-required_plugins = %w( vagrant-hostmanager vagrant-cachier )
+required_plugins = %w( vagrant-host-shell vagrant-hostmanager vagrant-cachier )
 required_plugins.each do |plugin|
   system "vagrant plugin install #{plugin}" unless Vagrant.has_plugin? plugin
 end
@@ -56,6 +56,8 @@ $vb_memory = 3700
 $vb_cpus = 6
 
 Vagrant.configure("2") do |config|
+  # box with mesos debs installed and all services are shut down
+  # to prevent binding to non-public IP before provision runs
   config.vm.box = "ubuntu14/mesos22"
 
   config.ssh.insert_key = false
@@ -72,10 +74,8 @@ Vagrant.configure("2") do |config|
 
   (1..$num_instances).each do |i|
     config.vm.define vm_name = "mesos-%02d" % i do |config|
-      config.vm.hostname = "#{vm_name}.hardy.local"
-
-      # FQDN is set manually because of some Vagrant/Ubuntu bug 
-      config.vm.provision :shell, :inline => "hostname #{vm_name}.hardy.local"
+      ip = "192.168.2.#{i+100}"
+      config.vm.network :public_network, ip: ip, bridge: "eth0"
 
       config.vm.provider :virtualbox do |vb|
         vb.gui = $vb_gui
@@ -83,11 +83,14 @@ Vagrant.configure("2") do |config|
         vb.cpus = $vb_cpus
       end
 
-      ip = "192.168.2.#{i+100}"
-      config.vm.network :public_network, ip: ip, bridge: "eth0"
+      config.vm.hostname = "#{vm_name}.hardy.local"
+      # FQDN is set manually because of some Vagrant/Ubuntu features
+      config.vm.provision :shell, :inline => "hostname #{vm_name}.hardy.local"
+      config.vm.provision :shell, :inline => "echo #{vm_name}.hardy.local > /etc/hostname"
 
       config.vm.provision :shell, :inline => $erasure
       config.vm.provision :shell, :inline => $shell
+      config.vm.provision :shell, :inline => "[ -f /etc/spinup/start-services.sh ] && /etc/spinup/start-services.sh"
     end
   end
 end

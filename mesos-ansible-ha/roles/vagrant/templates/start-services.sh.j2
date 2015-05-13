@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Mesos mode: {{ mesos_install_mode }}
+
+{% if mesos_install_mode == 'mixed' %}
+sudo service mesos-master start
+sudo service marathon start
+sudo service mesos-slave start
+{% endif %}
+{% if mesos_install_mode == 'master' %}
+sudo service mesos-master start
+sudo service marathon start
+{% endif %}
+{% if mesos_install_mode == 'slave' %}
+sudo service mesos-slave start
+{% endif %}

@@ -1,0 +1,11 @@
+- shell: echo manual > /etc/init/{{ item }}.override
+  with_items:
+    - mesos-master
+    - mesos-slave
+    - marathon
+
+- file: name=/etc/spinup state=directory
+
+- debug: var=mesos_install_mode
+
+- template: src=start-services.sh.j2 dest=/etc/spinup/start-services.sh mode=755

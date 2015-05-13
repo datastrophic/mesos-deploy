@@ -26,11 +26,11 @@
 #    - /etc/mesos-slave
 
 # we'll control starting of services manually
-- name: overriding master start up configuration
-  shell: echo manual > /etc/init/{{ item }}.override
-  with_items:
-    - mesos-master
-    - mesos-slave
+#- name: overriding master start up configuration
+#  file: name=/etc/init/{{ item }}.override state=absent
+#  with_items:
+#    - mesos-master
+#    - mesos-slave
 
 - name: starting all nodes in mixed mode (both master and slave)
   service: name={{ item }} state=started
